@@ -1,0 +1,37 @@
+# Figure properties
+figure.figsize: 3, 3
+
+figure.dpi : 200
+savefig.dpi : 300
+
+# Font properties
+font.family: Arial
+font.size: 10
+
+# Axes properties
+axes.titlesize : 10
+axes.linewidth: 1
+axes.labelpad: 10
+axes.spines.right : False
+axes.spines.top : False
+axes.prop_cycle: cycler(color=['EE6666', '3388BB', '9988DD','EECC55', '88BB44', 'FFBBBB'])
+
+# Tick properties
+# x-axis
+# xtick.top: True
+xtick.direction: out
+xtick.major.size: 7
+xtick.major.width: 1.5
+
+# y-axis
+# ytick.right: True
+ytick.direction: out
+ytick.major.size: 7
+ytick.major.width: 1.5
+
+# Line properties
+lines.linewidth: 1
+
+# Legend properties
+legend.framealpha: 1
+legend.frameon: False

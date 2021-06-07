@@ -1,0 +1,76 @@
+CREATE OR REPLACE TABLE `{staging_project}.{staging_dataset}.THD_SKU_ACTIVE`
+OPTIONS(expiration_timestamp=TIMESTAMP(DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY)))
+AS ( ---GET ALL ACTIVE SKU_STR_COMBOS
+SELECT
+  SUB_DEPT_NBR
+  , EXT_CLASS_NBR
+  , CLASS_DESC
+  , EXT_SUB_CLASS_NBR
+  , SUB_CLASS_DESC
+  , EXT_SUB_SC_NBR
+  , SKU.SKU_NBR
+  , SKU.SKU_CRT_DT
+  , TYP.SKU_DESC
+  , SKU_STAT_CD
+  , REPLE_SKU_NBR
+  , CASE WHEN SKU. SKU_NBR <> REPLE_SKU_NBR AND REPLE_SKU_NBR IS NOT NULL THEN 0 ELSE 1 END MAMA_SKU
+  , SKU.STR_NBR
+  , CONCAT(SKU. SKU_NBR,'-', CAST(SKU. SKU_CRT_DT AS STRING), '-', SKU.STR_NBR) AS SKU_STR_ID
+  , BLDG_SZ_AREA
+  , STR_X
+  , STR_Y
+  , STR_Z
+  , CAST(MKT_NBR AS INT64) MKT_NBR
+  , DIV_NBR
+  , EFF_BGN_DT
+  , EFF_END_DT
+  , ACTV_FLG
+FROM (
+    SELECT
+    SS.SKU_NBR
+    ,SS.SKU_CRT_DT
+    ,SS. STR_NBR
+    ,BLDG_SZ_AREA
+    ,COS(COALESCE(LAT_NBR,internal_point_lat)) * COS(COALESCE(LNG_NBR,internal_point_lon)) STR_X
+    ,COS(COALESCE(LAT_NBR,internal_point_lat)) * SIN(COALESCE(LNG_NBR,internal_point_lon)) STR_Y
+    ,SIN(COALESCE(LAT_NBR,internal_point_lat)) STR_Z
+    ,SKU_STAT_CD
+    ,SS.REPLE_SKU_NBR
+    ,STR.MKT_NBR
+    ,STR.DIV_NBR
+    ,EFF_BGN_DT
+    ,EFF_END_DT
+    ,SS.ACTV_FLG
+	FROM `{edw_project}.{edw_dataset_shared}.SKU_STR` SS
+	INNER JOIN `{edw_project}.{edw_dataset_shared}.STR_HIER_FD` STR
+		ON SS.STR_NBR = STR.STR_NBR
+		AND STR.S_GEO_HQ_NM = 'HD CORE, US'
+		AND STR.DIV_NBR IN ('0001','0002','0004')
+		AND STR.STR_CLS_DT > SS. EFF_BGN_DT
+    LEFT JOIN `{bq_public_project}.{bq_dataset_geo_boundaries}.zip_codes` ZIP
+        ON STR. PSTL_CD = ZIP. zip_code
+  WHERE SS.ACTV_FLG = TRUE
+
+  ) SKU
+INNER JOIN (
+      SELECT
+      SUB_DEPT_NBR
+      ,SUB_DEPT_DESC
+      ,EXT_CLASS_NBR
+      ,CLASS_DESC
+      ,EXT_SUB_CLASS_NBR
+      ,EXT_SUB_SC_NBR
+      ,SUB_CLASS_DESC
+      ,SKU_NBR
+      ,SKU_CRT_DT
+      ,SKU_DESC
+      ,SKU_TYP_CD
+      FROM `{edw_project}.{edw_dataset_shared}.SKU_HIER_FD`
+      WHERE SKU_TYP_CD IN ('N','L','S')
+      AND SUB_DEPT_NBR NOT IN ('0025','0028')
+      AND LATEST_SKU_CRT_DT_FLG = TRUE
+       ) TYP
+	ON SKU.SKU_NBR = TYP.SKU_NBR
+	AND SKU.SKU_CRT_DT = TYP.SKU_CRT_DT
+WHERE STR_NBR <> '8119'
+);

@@ -1,0 +1,15 @@
+CREATE OR REPLACE TABLE `{staging_project}.{staging_dataset}.CLASS_OH_DLY`
+PARTITION BY CAL_DT
+OPTIONS(expiration_timestamp=TIMESTAMP(DATE_ADD(CURRENT_DATE, INTERVAL 3 DAY)))
+AS(
+SELECT CAL_DT
+, EXT_CLASS_NBR
+, SUM(OH_QTY) OH_QTY
+FROM `{edw_project}.{edw_dataset_schn_inv}.STR_SKU_ACINV_DLY` A
+INNER JOIN `{staging_project}.{staging_dataset}.THD_SKU_ACTIVE` B
+    USING(SKU_NBR, SKU_CRT_DT, STR_NBR)
+WHERE PARTITIONDATE >= DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)
+GROUP BY
+        CAL_DT
+        , EXT_CLASS_NBR
+);

@@ -1,0 +1,78 @@
+data_prep_schedule: '0 20 * * MON' # change to everyday
+enable_data_prep_schedule_on_feature_branch: False
+
+train_prep_schedule: '0 20 * * MON' # change to sunday
+enable_ml_dag_schedule_on_feature_branch: False
+
+inference_schedule: '0 20 * * TUE' # Change to every day
+enable_ml_dag_schedule_on_feature_branch: False
+
+pipeline_name: bay_packdown
+
+metadata_project: 'analytics-store-ops-thd'
+metadata_dataset: 'PACKDOWN_ML'
+
+alerts:
+  smw_warning_threshold: 0.1
+  smw_error_threshold: 0.25
+
+data_prep:
+  master_data_project: 'analytics-store-ops-thd'
+  master_data_dataset: 'PACKDOWN_ML'
+  master_data_paritition_expiration_days: 14
+
+  # Tables that will be saved in master_data_dataset at the end of data-prep
+  master_data_tables:
+
+  # If on feature branch, execute promote_master_tables task
+  # NOTE: Setting this value to True can overwrite the data saved from master branch in master_data_dataset.
+  #       Typically, only the master branch should write to master_data_dataset to avoid data conflict.
+  allow_feature_branches_to_write_to_master_data_dataset: False
+
+  # Temporary dataset to store transient tables. The dataset name is suffixed with the run date.
+  # All tables in this dataset are deleted at the end of data-prep
+  staging_project: 'analytics-store-ops-thd'
+  staging_dataset: 'PACKDOWN_ML'
+  staging_default_table_expiration_days: 14
+
+  analytics_store_ops_project: 'analytics-store-ops-thd'
+
+  edw_project: 'pr-edw-views-thd'
+  edw_dataset_shared: 'SHARED'                                      # tables: SKU_STR, SKU_HIER_FD, STR_HIER_FD, CAL_PRD_HIER_FD, TRNSFM_DT_ALL, SKU_CRT_DT_LKUP, STR_AUDTD_MUMD, STR_AUDTD_MUMD_DTL, FSCL_WK_HIER_FD
+  edw_dataset_shared_commons: 'SHARED_COMMONS'                      # tables: SKU_STR_RETL
+  edw_dataset_sls: 'SLS'                                            # tables: POS_SLS_TRANS_DTL, SKU_STR_DAY_SLS_ADS
+  edw_dataset_fin_standard: 'FIN_STANDARD'                          # tables: PHY_INV_SCH, KEYREC, KEYREC_SKU_DTL
+  edw_dataset_mer_price: 'MER_PRICE'                                # tables: STR_PRC_CHG_HIST, PRC_CHG_HIST, AD_VER_MVSK
+  edw_dataset_schn_inv: 'SCHN_INV'                                  # tables: STR_SKU_ACINV_WKLY, STR_PHY_INV_DTL, STR_SKU_ACINV_DLY, STR_SKU_INV_CNT
+  edw_dataset_schn_actvy: 'SCHN_ACTVY'                              # tables: STR_RECPT, STR_RECPT_SKU
+  edw_dataset_ord_com: 'ORD_COM'                                    # tables: COM_LINE, COM_EVENT, COM_EVENT_TRK_CD
+  edw_dataset_fin_stats: 'FIN_STATS'                                # tables: STRSK_INV_SHNK_WKLY
+  edw_dataset_schn_sls_fcst: 'SCHN_SLS_FCST'                        # tables: WKLY_SLS_FCST_HIST
+
+  bq_public_project: 'bigquery-public-data'
+  bq_dataset_geo_boundaries: 'geo_us_boundaries'
+
+training:
+  bq_project: 'analytics-store-ops-thd'
+  bq_dataset: 'PACKDOWN_ML'
+  train_table_id: 'PACKDOWN_MODEL_BAY_TRAIN_DATA'
+  model_name: 'bay_packdown_nn'
+  regression_labels: ['OOS_PERC', 'SHELF_OUT_PERC', 'SHELF_LOW_PERC', 'BAY_RETL_OPP']
+  metadata_table_id: 'METADATA_NEW'
+  storage_bucket: 'store-ops-ml'
+  batch_size: 64
+  epochs: 100
+  embedding_features: ['BAY_LOC']
+  hyperparameter_tuning: False #Change to True for Master
+  data_limit: # Leave blank for Master
+  filter_list: ['ID', 'CAL_DT', 'DATA_LABEL', 'STR_NBR', 'OOS_PERC' ,'SHELF_OUT_PERC', 'SHELF_LOW_PERC', 'BAY_RETL_OPP']
+
+inference:
+  bucket: 'store-ops-ml'
+  model_dir: 'gs://store-ops-ml/artifacts'
+  predict_table_id: 'PACKDOWN_MODEL_BAY_PREDICT_DATA'
+  prediction_output_table: 'BAYPACKDOWN_STR_BAY_PREDICTIONS'
+  id_field: 'ID'
+  data_limit:
+  splits: 1
+
